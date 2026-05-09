@@ -79,10 +79,6 @@ print("=" * 60)
 # HELPER: FEATURE ENGINEERING (نفس الدالة في model.py بالضبط)
 # ============================================================================
 def engineer_features(df_in):
-    """
-    نفس الـ feature engineering المستخدم في التدريب بالضبط.
-    يجب أن تكون هذه الدالة مطابقة تماماً للدالة في model.py
-    """
     df_out = df_in.copy()
 
     df_out['is_new_customer']        = (df_out['tenure'] < 12).astype(int)
@@ -121,10 +117,6 @@ def engineer_features(df_in):
 
 
 def align_to_training(df_encoded):
-    """
-    تأكد إن الـ DataFrame فيه نفس الأعمدة بنفس الترتيب اللي شافه التدريب.
-    الأعمدة الناقصة تتضاف بـ 0، والزيادة تتحذف.
-    """
     for col in all_feature_names:
         if col not in df_encoded.columns:
             df_encoded[col] = 0
@@ -132,10 +124,6 @@ def align_to_training(df_encoded):
 
 
 def predict_with_pipeline(X_df):
-    """
-    يأخذ DataFrame بـ selected_features ويرجع (probability, prediction).
-    يستخدم الـ full_pipeline إذا موجود، وإلا الـ legacy files.
-    """
     if full_pipeline is not None:
         prob = full_pipeline.predict_proba(X_df)[0][1]
         pred = full_pipeline.predict(X_df)[0]
@@ -147,9 +135,6 @@ def predict_with_pipeline(X_df):
 
 
 def predict_batch_with_pipeline(X_df):
-    """
-    نفس predict_with_pipeline بس للـ batch (DataFrame كامل).
-    """
     if full_pipeline is not None:
         probs = full_pipeline.predict_proba(X_df)[:, 1]
         preds = full_pipeline.predict(X_df)
@@ -248,15 +233,6 @@ def form_fields():
 
 @app.route('/predict', methods=['POST'])
 def predict_single():
-    """
-    ✅ الحل الصحيح للتنبؤ الفردي:
-    1. نبني صف واحد بالأعمدة الأصلية
-    2. نطبق engineer_features
-    3. نعمل get_dummies بنفس طريقة التدريب
-    4. نحاذي مع all_feature_names
-    5. نأخذ selected_features فقط
-    6. ندخل الـ pipeline
-    """
     try:
         data = request.json
         print(f"\n{'='*50}")
@@ -330,11 +306,6 @@ def predict_single():
 
 @app.route('/upload_batch', methods=['POST'])
 def predict_batch():
-    """
-    ✅ الحل الصحيح للـ batch:
-    نستخدم نفس pipeline الـ single prediction بالضبط:
-    engineer_features → get_dummies → align → select → predict
-    """
     try:
         if 'file' not in request.files:
             return jsonify({'success': False, 'error': 'No file uploaded'})
