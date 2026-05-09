@@ -31,7 +31,7 @@ seaborn==0.13.2
 setuptools==69.5.1
 SHAP==0.45.0
 six==1.16.0
-slicer==0.0.8
+slicer==0.0.7
 SQLAlchemy==2.0.29
 tenacity==8.2.3
 threadpoolctl==3.5.0
