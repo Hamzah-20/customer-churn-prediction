@@ -25,6 +25,25 @@ print("=" * 80)
 print("CUSTOMER CHURN PREDICTION - PROFESSIONAL EDITION")
 print("=" * 80)
 
+
+# ============================================================================
+# Defining FeatureSelector as a regular class (to be stored with the pipeline)
+# ============================================================================
+class FeatureSelector:
+
+    def __init__(self, features):
+        self.features = features
+
+    def transform(self, X):
+        return X[self.features]
+
+    def fit(self, X, y=None):
+        return self
+
+    def get_feature_names_out(self, input_features=None):
+        return self.features
+
+
 # ============================================================================
 # 1. LOADING DATA
 # ============================================================================
@@ -46,44 +65,42 @@ print(f"   Churn rate: {df['Churn'].mean() * 100:.1f}%")
 # ============================================================================
 print("\n2. Creating advanced features...")
 
+
 def engineer_features(df_in):
-    """
-    دالة مركزية لعمل الـ feature engineering
-    بتُستخدم في التدريب والـ app بنفس الطريقة
-    """
+
     df_out = df_in.copy()
 
-    df_out['is_new_customer']        = (df_out['tenure'] < 12).astype(int)
-    df_out['is_very_new']            = (df_out['tenure'] < 3).astype(int)
-    df_out['is_long_term']           = (df_out['tenure'] > 60).astype(int)
-    df_out['tenure_years']           = df_out['tenure'] / 12
-    df_out['tenure_squared']         = df_out['tenure'] ** 2
+    df_out['is_new_customer'] = (df_out['tenure'] < 12).astype(int)
+    df_out['is_very_new'] = (df_out['tenure'] < 3).astype(int)
+    df_out['is_long_term'] = (df_out['tenure'] > 60).astype(int)
+    df_out['tenure_years'] = df_out['tenure'] / 12
+    df_out['tenure_squared'] = df_out['tenure'] ** 2
 
-    df_out['avg_monthly_charge']     = df_out['TotalCharges'] / (df_out['tenure'] + 1)
-    df_out['charge_vs_avg']          = df_out['MonthlyCharges'] - df_out['avg_monthly_charge']
-    df_out['high_charger']           = (df_out['MonthlyCharges'] > df_out['MonthlyCharges'].median()).astype(int)
-    df_out['charge_ratio']           = df_out['MonthlyCharges'] / (df_out['avg_monthly_charge'] + 0.01)
+    df_out['avg_monthly_charge'] = df_out['TotalCharges'] / (df_out['tenure'] + 1)
+    df_out['charge_vs_avg'] = df_out['MonthlyCharges'] - df_out['avg_monthly_charge']
+    df_out['high_charger'] = (df_out['MonthlyCharges'] > df_out['MonthlyCharges'].median()).astype(int)
+    df_out['charge_ratio'] = df_out['MonthlyCharges'] / (df_out['avg_monthly_charge'] + 0.01)
 
     all_services = ['OnlineSecurity', 'OnlineBackup', 'DeviceProtection',
                     'TechSupport', 'StreamingTV', 'StreamingMovies']
     for s in all_services:
         if s in df_out.columns:
-            df_out[f'no_{s}']  = (df_out[s] == 'No').astype(int)
+            df_out[f'no_{s}'] = (df_out[s] == 'No').astype(int)
             df_out[f'yes_{s}'] = (df_out[s] == 'Yes').astype(int)
 
     no_cols = [f'no_{s}' for s in all_services if f'no_{s}' in df_out.columns]
     df_out['total_missing_services'] = df_out[no_cols].sum(axis=1) if no_cols else 0
 
-    df_out['high_risk_customer']     = ((df_out['tenure'] < 12) & (df_out['MonthlyCharges'] > 70)).astype(int)
-    df_out['low_tenure_high_charge'] = ((df_out['tenure'] < 6)  & (df_out['MonthlyCharges'] > 80)).astype(int)
+    df_out['high_risk_customer'] = ((df_out['tenure'] < 12) & (df_out['MonthlyCharges'] > 70)).astype(int)
+    df_out['low_tenure_high_charge'] = ((df_out['tenure'] < 6) & (df_out['MonthlyCharges'] > 80)).astype(int)
 
     if 'Contract' in df_out.columns:
-        df_out['is_monthly_contract']  = (df_out['Contract'] == 'Month-to-month').astype(int)
-        df_out['is_yearly_contract']   = (df_out['Contract'] == 'One year').astype(int)
+        df_out['is_monthly_contract'] = (df_out['Contract'] == 'Month-to-month').astype(int)
+        df_out['is_yearly_contract'] = (df_out['Contract'] == 'One year').astype(int)
         df_out['is_two_year_contract'] = (df_out['Contract'] == 'Two year').astype(int)
 
     if 'PaymentMethod' in df_out.columns:
-        df_out['is_electronic_check']  = (df_out['PaymentMethod'] == 'Electronic check').astype(int)
+        df_out['is_electronic_check'] = (df_out['PaymentMethod'] == 'Electronic check').astype(int)
 
     return df_out
 
@@ -151,11 +168,11 @@ else:
     print(f"   Final (KBest ∩ L1): {len(selected_features)} features")
 
 X_train_sel = X_train_res[selected_features]
-X_test_sel  = X_test[selected_features]
+X_test_sel = X_test[selected_features]
 
 print(f"\n   Selected features list:")
 for i, f in enumerate(sorted(selected_features)):
-    print(f"     {i+1:2d}. {f}")
+    print(f"     {i + 1:2d}. {f}")
 
 # ============================================================================
 # 7. PIPELINES
@@ -192,21 +209,23 @@ lr_pipeline = Pipeline([
 # ============================================================================
 print("\n8. Training models...")
 
+
 def evaluate_pipeline(pipeline, Xtr, ytr, Xte, yte, name):
     pipeline.fit(Xtr, ytr)
-    yp    = pipeline.predict(Xte)
+    yp = pipeline.predict(Xte)
     yprob = pipeline.predict_proba(Xte)[:, 1]
     return {
         'name': name,
-        'accuracy':  accuracy_score(yte, yp),
+        'accuracy': accuracy_score(yte, yp),
         'precision': precision_score(yte, yp),
-        'recall':    recall_score(yte, yp),
-        'f1':        f1_score(yte, yp),
-        'auc':       roc_auc_score(yte, yprob),
-        'predictions':   yp,
+        'recall': recall_score(yte, yp),
+        'f1': f1_score(yte, yp),
+        'auc': roc_auc_score(yte, yprob),
+        'predictions': yp,
         'probabilities': yprob,
-        'pipeline':  pipeline
+        'pipeline': pipeline
     }
+
 
 results = []
 results.append(evaluate_pipeline(lr_pipeline, X_train_sel, y_train_res, X_test_sel, y_test, "Logistic Regression"))
@@ -225,18 +244,18 @@ voting_pipeline = Pipeline([
     ('classifier', voting_clf)
 ])
 voting_pipeline.fit(X_train_sel, y_train_res)
-vp    = voting_pipeline.predict(X_test_sel)
+vp = voting_pipeline.predict(X_test_sel)
 vprob = voting_pipeline.predict_proba(X_test_sel)[:, 1]
 results.append({
     'name': 'Voting Ensemble',
-    'accuracy':  accuracy_score(y_test, vp),
+    'accuracy': accuracy_score(y_test, vp),
     'precision': precision_score(y_test, vp),
-    'recall':    recall_score(y_test, vp),
-    'f1':        f1_score(y_test, vp),
-    'auc':       roc_auc_score(y_test, vprob),
-    'predictions':   vp,
+    'recall': recall_score(y_test, vp),
+    'f1': f1_score(y_test, vp),
+    'auc': roc_auc_score(y_test, vprob),
+    'predictions': vp,
     'probabilities': vprob,
-    'pipeline':  voting_pipeline
+    'pipeline': voting_pipeline
 })
 
 print("\n{:<25} {:>10} {:>10} {:>10} {:>10} {:>10}".format(
@@ -244,8 +263,8 @@ print("\n{:<25} {:>10} {:>10} {:>10} {:>10} {:>10}".format(
 print("-" * 70)
 for r in results:
     print("{:<25} {:>9.2f}% {:>9.2f}% {:>9.2f}% {:>9.2f}% {:>9.2f}%".format(
-        r['name'], r['accuracy']*100, r['precision']*100,
-        r['recall']*100, r['f1']*100, r['auc']*100))
+        r['name'], r['accuracy'] * 100, r['precision'] * 100,
+                   r['recall'] * 100, r['f1'] * 100, r['auc'] * 100))
 
 # ============================================================================
 # 9. CROSS-VALIDATION
@@ -261,29 +280,38 @@ for r in results:
     ci_lo = scores.mean() - 1.96 * scores.std()
     ci_hi = scores.mean() + 1.96 * scores.std()
     print(f"\n   {r['name']}:")
-    print(f"     Mean F1: {scores.mean()*100:.2f}% ± {scores.std()*100:.2f}%")
+    print(f"     Mean F1: {scores.mean() * 100:.2f}% ± {scores.std() * 100:.2f}%")
     print(f"     95% CI: [{ci_lo:.3f}, {ci_hi:.3f}]")
 
 # ============================================================================
 # 10. BEST MODEL
 # ============================================================================
 best_result = max(results, key=lambda x: x['f1'])
-best_name   = best_result['name']
+best_name = best_result['name']
 best_pipeline = best_result['pipeline']
 
 print(f"\n🏆 Best Model: {best_name}")
-print(f"   F1={best_result['f1']*100:.2f}% | Recall={best_result['recall']*100:.2f}% | AUC={best_result['auc']*100:.2f}%")
+print(
+    f"   F1={best_result['f1'] * 100:.2f}% | Recall={best_result['recall'] * 100:.2f}% | AUC={best_result['auc'] * 100:.2f}%")
 
 # ============================================================================
-# 11. SAVE — الحل الجذري: نحفظ كل شيء بشكل صحيح
+#11. SAVE — The ultimate solution: We save everything correctly
 # ============================================================================
 print("\n11. Saving model artifacts...")
 os.makedirs('static', exist_ok=True)
 os.makedirs('templates', exist_ok=True)
 
+final_full_pipeline = Pipeline([
+    ('feature_selector', FeatureSelector(selected_features)),
+    ('scaler', StandardScaler()),
+    ('classifier', best_pipeline.named_steps['classifier'])
+])
+
+final_full_pipeline.fit(X_train_sel, y_train_res)
+
 with open('full_pipeline.pkl', 'wb') as f:
-    pickle.dump(best_pipeline, f)
-print("   ✅ Saved full_pipeline.pkl (scaler + classifier)")
+    pickle.dump(final_full_pipeline, f)
+print("   ✅ Saved full_pipeline.pkl (scaler + classifier + feature selector)")
 
 with open('selected_features.pkl', 'wb') as f:
     pickle.dump(selected_features, f)
@@ -306,19 +334,23 @@ print("   ✅ Saved encoding_info.pkl")
 with open('churn_model.pkl', 'wb') as f:
     pickle.dump(best_pipeline.named_steps['classifier'], f)
 with open('scaler.pkl', 'wb') as f:
-    pickle.dump(best_pipeline.named_steps['scaler'], f)
+    pickle.dump(StandardScaler(), f)
 with open('full_features.pkl', 'wb') as f:
     pickle.dump(all_feature_names, f)
 with open('selector.pkl', 'wb') as f:
     pickle.dump(selected_features, f)
 print("   ✅ Saved legacy pkl files for backward compatibility")
 
+with open('feature_selector.pkl', 'wb') as f:
+    pickle.dump(FeatureSelector, f)
+print("   ✅ Saved FeatureSelector class for app.py")
+
 # ============================================================================
 # 12. VISUALIZATIONS
 # ============================================================================
 print("\n12. Creating visualizations...")
 
-y_final_pred  = best_result['predictions']
+y_final_pred = best_result['predictions']
 y_final_proba = best_result['probabilities']
 
 plt.figure(figsize=(8, 6))
@@ -326,7 +358,8 @@ cm = confusion_matrix(y_test, y_final_pred)
 sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
             xticklabels=['Stay', 'Churn'], yticklabels=['Stay', 'Churn'])
 plt.title(f'Confusion Matrix — {best_name}')
-plt.xlabel('Predicted'); plt.ylabel('Actual')
+plt.xlabel('Predicted');
+plt.ylabel('Actual')
 plt.tight_layout()
 plt.savefig('static/confusion_matrix.png', dpi=150, bbox_inches='tight')
 plt.close()
@@ -341,10 +374,12 @@ plt.figure(figsize=(10, 6))
 tenure_effect = df_orig.groupby('tenure')['Churn'].mean()
 plt.plot(tenure_effect.index, tenure_effect.values, 'b-o', linewidth=2, markersize=4)
 plt.axhline(y=df_orig['Churn'].mean(), color='r', linestyle='--',
-            label=f'Overall avg ({df_orig["Churn"].mean()*100:.1f}%)')
-plt.xlabel('Tenure (months)'); plt.ylabel('Churn Rate')
+            label=f'Overall avg ({df_orig["Churn"].mean() * 100:.1f}%)')
+plt.xlabel('Tenure (months)');
+plt.ylabel('Churn Rate')
 plt.title('Tenure vs Churn Rate')
-plt.legend(); plt.grid(True, alpha=0.3)
+plt.legend();
+plt.grid(True, alpha=0.3)
 plt.savefig('static/tenure_effect.png', dpi=150, bbox_inches='tight')
 plt.close()
 print("   ✅ tenure_effect.png")
@@ -354,10 +389,13 @@ price_bins = pd.cut(df_orig['MonthlyCharges'], bins=8)
 price_effect = df_orig.groupby(price_bins, observed=True)['Churn'].mean()
 price_effect.plot(kind='bar', color='coral', edgecolor='black')
 plt.axhline(y=df_orig['Churn'].mean(), color='blue', linestyle='--',
-            label=f'Average ({df_orig["Churn"].mean()*100:.1f}%)')
-plt.xlabel('Monthly Charges ($)'); plt.ylabel('Churn Rate')
+            label=f'Average ({df_orig["Churn"].mean() * 100:.1f}%)')
+plt.xlabel('Monthly Charges ($)');
+plt.ylabel('Churn Rate')
 plt.title('Monthly Charges vs Churn Rate')
-plt.xticks(rotation=45); plt.legend(); plt.tight_layout()
+plt.xticks(rotation=45);
+plt.legend();
+plt.tight_layout()
 plt.savefig('static/price_effect.png', dpi=150, bbox_inches='tight')
 plt.close()
 print("   ✅ price_effect.png")
@@ -368,9 +406,10 @@ if 'Contract' in df_orig.columns:
     colors = ['#e74c3c', '#f39c12', '#2ecc71']
     contract_effect.plot(kind='bar', color=colors, edgecolor='black')
     plt.title('Contract Type vs Churn Rate')
-    plt.ylabel('Churn Rate'); plt.xticks(rotation=0)
+    plt.ylabel('Churn Rate');
+    plt.xticks(rotation=0)
     for i, v in enumerate(contract_effect):
-        plt.text(i, v + 0.01, f'{v*100:.1f}%', ha='center', fontweight='bold')
+        plt.text(i, v + 0.01, f'{v * 100:.1f}%', ha='center', fontweight='bold')
     plt.tight_layout()
     plt.savefig('static/contract_effect.png', dpi=150, bbox_inches='tight')
     plt.close()
@@ -380,7 +419,7 @@ services_list = ['OnlineSecurity', 'TechSupport', 'OnlineBackup', 'DeviceProtect
 service_effect = {}
 for s in services_list:
     if s in df_orig.columns:
-        no_val  = df_orig[df_orig[s] == 'No']['Churn'].mean()
+        no_val = df_orig[df_orig[s] == 'No']['Churn'].mean()
         yes_val = df_orig[df_orig[s] == 'Yes']['Churn'].mean()
         service_effect[s] = [no_val, yes_val]
 
@@ -388,14 +427,16 @@ if service_effect:
     plt.figure(figsize=(12, 6))
     x = np.arange(len(service_effect))
     w = 0.35
-    no_vals  = [service_effect[s][0] for s in service_effect]
+    no_vals = [service_effect[s][0] for s in service_effect]
     yes_vals = [service_effect[s][1] for s in service_effect]
-    plt.bar(x - w/2, no_vals,  w, label='Without Service', color='salmon')
-    plt.bar(x + w/2, yes_vals, w, label='With Service',    color='lightgreen')
-    plt.xlabel('Services'); plt.ylabel('Churn Rate')
+    plt.bar(x - w / 2, no_vals, w, label='Without Service', color='salmon')
+    plt.bar(x + w / 2, yes_vals, w, label='With Service', color='lightgreen')
+    plt.xlabel('Services');
+    plt.ylabel('Churn Rate')
     plt.title('Impact of Services on Churn')
     plt.xticks(x, list(service_effect.keys()), rotation=45)
-    plt.legend(); plt.tight_layout()
+    plt.legend();
+    plt.tight_layout()
     plt.savefig('static/services_effect.png', dpi=150, bbox_inches='tight')
     plt.close()
     print("   ✅ services_effect.png")
@@ -405,13 +446,13 @@ if service_effect:
 # ============================================================================
 print("\n13. SHAP Analysis...")
 try:
-    clf     = best_pipeline.named_steps['classifier']
+    clf = best_pipeline.named_steps['classifier']
     scaler_ = best_pipeline.named_steps['scaler']
 
     X_test_scaled = scaler_.transform(X_test_sel)
     X_sample = X_test_scaled[:min(200, len(X_test_scaled))]
 
-    explainer   = shap.TreeExplainer(clf)
+    explainer = shap.TreeExplainer(clf)
     shap_values = explainer.shap_values(X_sample)
 
     if isinstance(shap_values, list):
@@ -446,20 +487,19 @@ print("✅ TRAINING COMPLETE")
 print("=" * 80)
 print(f"""
 Best Model:      {best_name}
-Accuracy:        {best_result['accuracy']*100:.2f}%
-Precision:       {best_result['precision']*100:.2f}%
-Recall:          {best_result['recall']*100:.2f}%
-F1-Score:        {best_result['f1']*100:.2f}%
-ROC-AUC:         {best_result['auc']*100:.2f}%
+Accuracy:        {best_result['accuracy'] * 100:.2f}%
+Precision:       {best_result['precision'] * 100:.2f}%
+Recall:          {best_result['recall'] * 100:.2f}%
+F1-Score:        {best_result['f1'] * 100:.2f}%
+ROC-AUC:         {best_result['auc'] * 100:.2f}%
 
-CV Mean F1:      {cv_results[best_name].mean()*100:.2f}% ± {cv_results[best_name].std()*100:.2f}%
+CV Mean F1:      {cv_results[best_name].mean() * 100:.2f}% ± {cv_results[best_name].std() * 100:.2f}%
 
 Features:        {len(all_feature_names)} total → {len(selected_features)} selected
 
 Key Files Saved:
-  ✅ full_pipeline.pkl        ← الأهم: pipeline كامل (scaler + model)
-  ✅ selected_features.pkl    ← الـ features المختارة بالترتيب
-  ✅ all_feature_names.pkl    ← كل الـ features بعد الـ encoding
-  ✅ encoding_info.pkl        ← معلومات الـ encoding
+  ✅ full_pipeline.pkl        
+  ✅ selected_features.pkl    
+  ✅ feature_selector.pkl     
 """)
 print("=" * 80)
