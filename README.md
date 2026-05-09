@@ -269,16 +269,16 @@ http://127.0.0.1:5000
 ## Application Preview
 
 ### Dashboard
-<img width="1918" height="953" alt="image" src="https://github.com/user-attachments/assets/b4d27a08-a97d-4d20-8642-77d3f6f3aea3" />
+<img width="1919" height="952" alt="image" src="https://github.com/user-attachments/assets/c34dc0dc-162e-4848-9fdb-0eedb6b095fd" />
 
 ### SHAP Explainability
-<img width="1350" height="2240" alt="127 0 0 1_5000_" src="https://github.com/user-attachments/assets/ccbb1ccd-8df1-4359-a841-0ca7fdfb06a9" />
+<img width="1350" height="2240" alt="127 0 0 1_5000_" src="https://github.com/user-attachments/assets/b8bd082e-2318-4eb6-bfd2-e44c3ccb4272" />
 
 ### Confusion Matrix
-<img width="1096" height="880" alt="confusion_matrix" src="https://github.com/user-attachments/assets/02d16366-fde8-4e6c-8ebe-b9308d41b23f" />
+<img width="1096" height="880" alt="confusion_matrix" src="https://github.com/user-attachments/assets/c26aa9e5-7144-445a-8888-f5613f2ca8b9" />
 
 ### Batch Prediction
-<img width="1350" height="2399" alt="127 0 0 1_5000_ (1)" src="https://github.com/user-attachments/assets/ba022883-846e-46f0-b6b3-a56a7edec5ff" />
+<img width="1350" height="2399" alt="127 0 0 1_5000_ (1)" src="https://github.com/user-attachments/assets/9186ed9d-79c0-4e55-99fc-a3d259d430d8" />
 
 ---
 
