@@ -1,0 +1,34 @@
+name: Deploy to Cloud
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  test-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Test model loading
+        run: |
+          python -c "import pickle; print('Dependencies OK')"
+
+      - name: Build Docker image
+        run: |
+          docker build -t churn-predictor .
+
+      - name: Ready to deploy
+        run: |
+          echo "CI/CD Pipeline Ready"

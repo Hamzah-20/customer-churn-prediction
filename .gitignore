@@ -1,0 +1,30 @@
+﻿# Python
+__pycache__/
+*.py[cod]
+*.so
+.Python
+.env
+.venv/
+venv/
+ENV/
+
+# Model files (large)
+*.pkl
+*.joblib
+
+# Data files
+*.csv
+*.xlsx
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Logs
+*.log
+static/predictions_result.csv
+
+# OS
+.DS_Store
+Thumbs.db

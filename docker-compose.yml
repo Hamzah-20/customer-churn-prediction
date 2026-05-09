@@ -1,0 +1,11 @@
+version: '3.8'
+services:
+  churn-app:
+    build: .
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./static:/app/static
+    environment:
+      - FLASK_ENV=production
+    restart: unless-stopped
