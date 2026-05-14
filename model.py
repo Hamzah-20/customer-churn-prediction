@@ -16,6 +16,8 @@ from sklearn.pipeline import Pipeline
 from scipy.stats import ttest_rel
 import shap
 import warnings
+from xgboost import XGBClassifier
+
 
 warnings.filterwarnings('ignore')
 plt.style.use('seaborn-v0_8-darkgrid')
@@ -197,6 +199,20 @@ gb_pipeline = Pipeline([
     ))
 ])
 
+xgb_pipeline = Pipeline([
+    ('scaler', StandardScaler()),
+    ('classifier', XGBClassifier(
+        n_estimators=300,
+        learning_rate=0.05,
+        max_depth=4,
+        subsample=0.8,
+        colsample_bytree=0.8,
+        scale_pos_weight=2.7,
+        eval_metric='logloss',
+        random_state=42
+    ))
+])
+
 lr_pipeline = Pipeline([
     ('scaler', StandardScaler()),
     ('classifier', LogisticRegression(
@@ -231,6 +247,7 @@ results = []
 results.append(evaluate_pipeline(lr_pipeline, X_train_sel, y_train_res, X_test_sel, y_test, "Logistic Regression"))
 results.append(evaluate_pipeline(rf_pipeline, X_train_sel, y_train_res, X_test_sel, y_test, "Random Forest"))
 results.append(evaluate_pipeline(gb_pipeline, X_train_sel, y_train_res, X_test_sel, y_test, "Gradient Boosting"))
+results.append(evaluate_pipeline(xgb_pipeline, X_train_sel, y_train_res, X_test_sel, y_test, "XGBoost"))
 
 voting_clf = VotingClassifier(
     estimators=[
