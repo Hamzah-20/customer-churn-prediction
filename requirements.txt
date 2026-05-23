@@ -39,3 +39,4 @@ tzdata==2024.1
 Werkzeug==3.0.1
 wrapt==1.16.0
 zipp==3.18.1
+gunicorn
