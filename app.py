@@ -45,8 +45,8 @@ try:
     with open('full_pipeline.pkl', 'rb') as f:
         full_pipeline = pickle.load(f)
     print(f"✅ Loaded full_pipeline.pkl")
-except FileNotFoundError:
-    print("⚠️ full_pipeline.pkl not found — will use legacy files")
+except Exception as e:
+    print(f"❌ Failed to load full_pipeline.pkl: {type(e).__name__}: {e}")
     full_pipeline = None
 
 try:
@@ -62,7 +62,7 @@ try:
         scaler = pickle.load(f)
     print("✅ Loaded scaler.pkl")
 except Exception as e:
-    print(f"❌ {e}");
+    print(f"❌ Failed to load scaler.pkl: {type(e).__name__}: {e}")
     scaler = None
 
 try:
