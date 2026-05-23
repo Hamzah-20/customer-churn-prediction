@@ -12,7 +12,7 @@
 
 ## Overview
 
-** Live Project Repository:** [github.com/Hamzah-20/customer-churn-prediction](https://github.com/Hamzah-20/customer-churn-prediction)
+**Live Project Repository :**  [Churn prediction](https://github.com/Hamzah-20/customer-churn-prediction)
 
 Chronos AI is a full-stack machine learning platform designed to predict telecom customer churn and provide actionable business insights for customer retention strategies.
 
