@@ -17,4 +17,3 @@ ENV/
 static/predictions_result.csv
 
 .DS_Store
-Thumbs.db

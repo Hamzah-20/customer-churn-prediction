@@ -7,8 +7,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-RUN ls -lh
-
 EXPOSE 10000
 
 CMD ["gunicorn", "app:app", "--bind", "0.0.0.0:10000"]

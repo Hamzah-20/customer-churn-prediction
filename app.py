@@ -313,7 +313,10 @@ def predict_single():
         df_final = df_aligned[selected_features]
         print(f"   After selection: {df_final.shape[1]} features")
 
-        probability, prediction = predict_with_pipeline(df_final)
+        probability, _ = predict_with_pipeline(df_final)
+
+        RISK_THRESHOLD = 0.65
+        prediction = int(probability >= RISK_THRESHOLD)
         print(f"   ✅ Probability: {probability * 100:.1f}% | Prediction: {'Churn' if prediction else 'Stay'}")
 
         risk, recommendation = get_risk_info(probability)
@@ -340,18 +343,23 @@ def predict_batch():
             return jsonify({'success': False, 'error': 'No file uploaded'})
 
         file = request.files['file']
+
         if not file.filename:
             return jsonify({'success': False, 'error': 'No file selected'})
+
         if not file.filename.endswith('.csv'):
             return jsonify({'success': False, 'error': 'Please upload a CSV file only'})
 
         df = pd.read_csv(file)
+
         print(f"\n{'=' * 50}")
         print(f"📂 Batch: {len(df)} rows, {len(df.columns)} cols")
 
-        customer_ids = (df['customerID'].tolist()
-                        if 'customerID' in df.columns
-                        else [f'Customer {i + 1}' for i in range(len(df))])
+        customer_ids = (
+            df['customerID'].tolist()
+            if 'customerID' in df.columns
+            else [f'Customer {i + 1}' for i in range(len(df))]
+        )
 
         for col in ['Churn', 'customerID']:
             if col in df.columns:
@@ -359,7 +367,10 @@ def predict_batch():
 
         df['TotalCharges'] = pd.to_numeric(df['TotalCharges'], errors='coerce')
         df.dropna(inplace=True)
+
         print(f"   After cleaning: {len(df)} rows")
+
+        customer_ids = customer_ids[:len(df)]
 
         mask = (df['TotalCharges'] == 0) & (df['tenure'] > 0)
         df.loc[mask, 'TotalCharges'] = df.loc[mask, 'MonthlyCharges'] * df.loc[mask, 'tenure']
@@ -368,60 +379,95 @@ def predict_batch():
 
         cat_cols = df.select_dtypes(include=['object']).columns.tolist()
         df_encoded = pd.get_dummies(df, columns=cat_cols, drop_first=True)
+
         print(f"   After encoding: {df_encoded.shape[1]} features")
 
         df_aligned = align_to_training(df_encoded)
+
         print(f"   After alignment: {df_aligned.shape[1]} features")
 
         missing_sel = [f for f in selected_features if f not in df_aligned.columns]
+
         if missing_sel:
             print(f"   ⚠️ Missing in selected: {missing_sel}")
             for f in missing_sel:
                 df_aligned[f] = 0
 
         df_final = df_aligned[selected_features]
+
         print(f"   After selection: {df_final.shape[1]} features")
 
         expected_features = len(selected_features)
         actual_features = df_final.shape[1]
+
         print(f"   Expected: {expected_features} | Got: {actual_features}")
 
         if actual_features != expected_features:
             return jsonify({
                 'success': False,
-                'error': f'Feature mismatch: expected {expected_features}, got {actual_features}. '
-                         f'Please re-run model.py'
+                'error': f'Feature mismatch: expected {expected_features}, got {actual_features}. Please re-run model.py'
             })
 
-        probabilities, predictions = predict_batch_with_pipeline(df_final)
+        probabilities, _ = predict_batch_with_pipeline(df_final)
+
+        # Important:
+        # 0.50 gives high recall but too many false positives.
+        # 0.65 is better for displaying "At Risk" customers in the dashboard.
+        RISK_THRESHOLD = 0.65
+
+        predictions = (probabilities >= RISK_THRESHOLD).astype(int)
+
         print(f"   ✅ Predictions complete: {len(predictions)} customers")
+        print(f"   Threshold used: {RISK_THRESHOLD * 100:.0f}%")
+        print(f"   Probability mean: {probabilities.mean() * 100:.2f}%")
+        print(f"   Probability min: {probabilities.min() * 100:.2f}%")
+        print(f"   Probability max: {probabilities.max() * 100:.2f}%")
 
         results_df = pd.DataFrame({
             'Customer_ID': customer_ids[:len(predictions)],
             'Prediction': ['Will Churn' if p == 1 else 'Will Stay' for p in predictions],
             'Churn_Probability': [round(p * 100, 1) for p in probabilities],
-            'Risk_Level': ['High' if p > 0.7
-                           else 'Medium' if p > 0.4
-            else 'Low' for p in probabilities]
+            'Risk_Level': [
+                'High' if p >= 0.65
+                else 'Medium' if p >= 0.40
+                else 'Low'
+                for p in probabilities
+            ]
         })
 
         output_path = 'static/predictions_result.csv'
         results_df.to_csv(output_path, index=False, encoding='utf-8-sig')
 
         plt.figure(figsize=(14, 6))
-        colors = ['#2ecc71' if x == 'Will Stay' else '#e74c3c'
-                  for x in results_df['Prediction']]
-        plt.bar(range(len(results_df)), results_df['Churn_Probability'],
-                color=colors, alpha=0.7)
-        plt.axhline(y=50, color='orange', linestyle='--', linewidth=2,
-                    label='Risk Threshold (50%)')
+
+        colors = [
+            '#e74c3c' if x == 'Will Churn' else '#2ecc71'
+            for x in results_df['Prediction']
+        ]
+
+        plt.bar(
+            range(len(results_df)),
+            results_df['Churn_Probability'],
+            color=colors,
+            alpha=0.7
+        )
+
+        plt.axhline(
+            y=RISK_THRESHOLD * 100,
+            color='orange',
+            linestyle='--',
+            linewidth=2,
+            label=f'Risk Threshold ({int(RISK_THRESHOLD * 100)}%)'
+        )
+
         plt.xlabel('Customer Number', fontsize=12)
         plt.ylabel('Churn Probability (%)', fontsize=12)
         plt.title('Customer Churn Prediction Results — Batch Analysis', fontsize=14)
-        plt.legend();
-        plt.ylim(0, 100);
+        plt.legend()
+        plt.ylim(0, 100)
         plt.grid(True, alpha=0.3)
         plt.tight_layout()
+
         plt.savefig('static/batch_chart.png', dpi=150)
         plt.close()
 
@@ -435,8 +481,8 @@ def predict_batch():
             'stay_count': len(results_df) - churn_count,
             'download_url': '/static/predictions_result.csv',
             'chart_url': '/static/batch_chart.png?v=' + str(
-                os.path.getmtime('static/batch_chart.png'))
-            if os.path.exists('static/batch_chart.png') else None,
+                os.path.getmtime('static/batch_chart.png')
+            ) if os.path.exists('static/batch_chart.png') else None,
             'results': results_df.head(30).to_dict('records')
         })
 
