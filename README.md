@@ -1,4 +1,4 @@
-# Chronos AI — Customer Churn Intelligence Platform
+# Explainable Customer Churn Prediction System using Machine Learning
 
 ![Python](https://img.shields.io/badge/Python-3.11-blue)
 ![Flask](https://img.shields.io/badge/Flask-Web_App-black)
@@ -14,7 +14,7 @@
 
 **Live Project Repository :**  [Churn prediction](https://github.com/Hamzah-20/customer-churn-prediction)
 
-Chronos AI is a full-stack machine learning platform designed to predict telecom customer churn and provide actionable business insights for customer retention strategies.
+The Explainable Customer Churn Prediction System is a full-stack machine learning platform designed to predict telecom customer churn and provide actionable business insights for customer retention strategies.
 
 The project combines:
 - Advanced machine learning pipelines
@@ -37,7 +37,7 @@ The goal is not only to predict churn, but also to explain *why* customers are l
 - Feature Selection using Mutual Information & L1 Regularization
 - Class Imbalance Handling using SMOTETomek
 - Advanced Feature Engineering
-- Cross-Validation Evaluation
+- Leakage-Free Repeated Stratified Cross Validation
 
 ### Explainable AI (XAI)
 - SHAP Summary Analysis
@@ -74,11 +74,40 @@ The project follows a professional machine learning workflow:
 6. Feature Selection
 7. Model Training
 8. Model Comparison
-9. Cross-Validation Evaluation
+9. Leakage-Free Repeated Stratified Cross Validation
 10. Model Selection
 11. SHAP Explainability
 12. Deployment using Flask
 
+---
+
+## System Architecture
+
+```text
+Dataset
+   ↓
+Data Cleaning
+   ↓
+Feature Engineering
+   ↓
+One-Hot Encoding
+   ↓
+Train/Test Split
+   ↓
+SMOTETomek Resampling
+   ↓
+Feature Selection
+   ↓
+Model Training
+   ↓
+Leakage-Free Cross Validation
+   ↓
+Model Evaluation
+   ↓
+SHAP Explainability
+   ↓
+Flask Deployment
+```
 ---
 
 ## Scientific Feature Engineering
@@ -96,6 +125,21 @@ Examples of engineered features:
 - high-risk customer indicators
 - service adoption patterns
 - contract behavior indicators
+
+---
+
+## Data Leakage Prevention
+
+To ensure reliable evaluation and realistic model performance estimation, all preprocessing steps were performed exclusively on training data during cross-validation.
+
+For each fold:
+
+1. SMOTETomek resampling was applied only to the training split.
+2. Feature selection was performed using training data only.
+3. Models were trained on the processed training fold.
+4. Evaluation was conducted on unseen validation data.
+
+This workflow prevents information leakage and provides a more trustworthy estimate of real-world model performance.
 
 ---
 
@@ -119,7 +163,7 @@ Therefore, Recall was prioritized as a key evaluation metric.
 | Gradient Boosting   | 77.90%     | 58.49%     | 58.02%     | 58.26%     | 82.78%     |
 | **XGBoost**         | **73.77%** | **50.43%** | **78.61%** | **61.44%** | **83.14%** |
 
-### Cross-Validation Results
+### Leakage-Free Cross-Validation Results
 
 | Model               | Mean F1 | Std Dev |
 | ------------------- | ------- | ------- |
@@ -127,6 +171,8 @@ Therefore, Recall was prioritized as a key evaluation metric.
 | Random Forest       | 63.58%  | ±1.54%  |
 | Gradient Boosting   | 60.13%  | ±1.85%  |
 | XGBoost             | 62.57%  | ±1.17%  |
+
+The reported cross-validation results were obtained using a leakage-free repeated stratified cross-validation workflow, where resampling and feature selection were performed independently within each fold.
 
 ### Selected Model
 
@@ -311,12 +357,17 @@ The system demonstrates how interpretable machine learning can improve customer 
 
 ## Future Improvements
 
-- Docker deployment
-- Cloud hosting (AWS/GCP)
-- Deep Learning experimentation
-- Real-time API integration
-- Advanced hyperparameter optimization
-- MLOps pipeline integration
+* Automated Hyperparameter Optimization using Optuna or Bayesian Optimization
+* MLflow Integration for Experiment Tracking and Model Versioning
+* End-to-End MLOps Pipeline for Continuous Training and Deployment
+* Customer Lifetime Value (CLV) Prediction Integration
+* Real-Time Prediction API using FastAPI
+* Cloud Deployment on AWS, Azure, or Google Cloud Platform
+* Advanced Ensemble Learning Strategies
+* Deep Learning-Based Churn Prediction Models
+* Automated Data Drift Detection and Monitoring
+* Interactive Business Intelligence Dashboard with Real-Time Analytics
+
 
 ---
 
