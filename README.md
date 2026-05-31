@@ -30,14 +30,14 @@ The goal is not only to predict churn, but also to explain *why* customers are l
 ## Key Features
 
 ### AI & Machine Learning
-- Ensemble Learning Models
+- XGBoost (Final Selected Model)
 - Random Forest
 - Gradient Boosting
-- Voting Classifier
-- Logistic Regression Baseline
-- Feature Selection using Mutual Information
+- Logistic Regression
+- Feature Selection using Mutual Information & L1 Regularization
 - Class Imbalance Handling using SMOTETomek
 - Advanced Feature Engineering
+- Cross-Validation Evaluation
 
 ### Explainable AI (XAI)
 - SHAP Summary Analysis
@@ -73,10 +73,11 @@ The project follows a professional machine learning workflow:
 5. SMOTETomek Resampling
 6. Feature Selection
 7. Model Training
-8. Ensemble Learning
-9. Model Evaluation
-10. SHAP Explainability
-11. Deployment using Flask
+8. Model Comparison
+9. Cross-Validation Evaluation
+10. Model Selection
+11. SHAP Explainability
+12. Deployment using Flask
 
 ---
 
@@ -101,49 +102,38 @@ Examples of engineered features:
 ## Model Performance
 
 ### Why Recall Matters More Than Accuracy?
-In churn prediction, **missing a churning customer (False Negative) is more costly**
-than a false alarm (False Positive).
 
-- Missing a churner = losing a customer forever
-- False alarm = unnecessary retention offer (small cost)
+In churn prediction, missing a customer who is likely to leave is often more expensive than contacting a customer who would stay.
 
-Therefore, **Recall was prioritized** as the primary model selection metric.
+* False Negative → Lost customer and lost revenue
+* False Positive → Retention offer with relatively low cost
 
----
+Therefore, Recall was prioritized as a key evaluation metric.
 
-### Final Test Performance (on original imbalanced data)
+### Final Test Performance
 
-| Model               | Accuracy | Precision | Recall | F1-Score | ROC-AUC |
-| ------------------- | -------- | --------- | ------ | -------- | ------- |
-| Logistic Regression | 78.39%   | 58.14%    | 66.84% | 62.19%   | 83.57%  |
-| **Random Forest**  | **77.61%** | **56.51%** | **68.45%** | **61.91%** | **83.62%** |
-| Gradient Boosting   | 78.25%   | 58.95%    | 59.89% | 59.42%   | 82.95%  |
-| Voting Ensemble     | 78.25%   | 58.25%    | 64.17% | 61.07%   | 83.46%  |
+| Model               | Accuracy   | Precision  | Recall     | F1-Score   | ROC-AUC    |
+| ------------------- | ---------- | ---------- | ---------- | ---------- | ---------- |
+| Logistic Regression | 78.04%     | 57.87%     | 63.90%     | 60.74%     | 83.53%     |
+| Random Forest       | 77.40%     | 56.33%     | 66.58%     | 61.03%     | 83.65%     |
+| Gradient Boosting   | 77.90%     | 58.49%     | 58.02%     | 58.26%     | 82.78%     |
+| **XGBoost**         | **73.77%** | **50.43%** | **78.61%** | **61.44%** | **83.14%** |
 
->  **Best Model Selected: Random Forest**
-> Reason: Highest Recall (68.45%) and ROC-AUC (83.62%) —
-> ensuring maximum detection of at-risk customers.
+### Cross-Validation Results
 
----
+| Model               | Mean F1 | Std Dev |
+| ------------------- | ------- | ------- |
+| Logistic Regression | 62.29%  | ±1.45%  |
+| Random Forest       | 63.58%  | ±1.54%  |
+| Gradient Boosting   | 60.13%  | ±1.85%  |
+| XGBoost             | 62.57%  | ±1.17%  |
 
-### Cross-Validation Stability (on resampled training data)
+### Selected Model
 
-| Model               | Mean F1 | Std Dev | 95% Confidence Interval |
-| ------------------- | ------- | ------- | ----------------------- |
-| Logistic Regression | 86.45%  | ±1.13%  | [0.842, 0.887]          |
-| Random Forest       | 85.98%  | ±0.78%  | [0.845, 0.875]          |
-| Gradient Boosting   | 87.23%  | ±1.03%  | [0.852, 0.892]          |
-| Voting Ensemble     | 87.13%  | ±0.99%  | [0.852, 0.891]          |
+**XGBoost** was selected as the final model because it achieved the highest churn detection capability (Recall = 78.61%) while maintaining strong ROC-AUC performance.
 
->  **Why CV scores are higher than Test scores?**
->
-> This is expected and not a bug:
-> - **CV scores** were measured on **resampled training data** (after SMOTETomek),
->   where churn rate is balanced at ~50% — making prediction easier.
-> - **Test scores** were measured on the **original imbalanced data**,
->   where churn rate is only 26.5% — which is the real-world scenario.
->
-> This gap is a sign of **honest evaluation**, not overfitting.
+The final model demonstrated stable performance between the test set and cross-validation results, indicating reliable generalization and effective prevention of data leakage.
+
 ---
 
 ## Explainable AI Visualizations
@@ -171,7 +161,7 @@ These visualizations help explain model decisions and improve business trust in 
 ### Machine Learning
 - Random Forest
 - Gradient Boosting
-- Voting Ensemble
+- XGBoost
 - Logistic Regression
 - SHAP
 - SMOTETomek
@@ -206,10 +196,12 @@ customer-churn-prediction/
 ├── templates/
 │   └── index.html
 │
+├── full_pipeline.pkl
+├── selected_features.pkl
+├── all_feature_names.pkl
+├── encoding_info.pkl
 ├── churn_model.pkl
-├── scaler.pkl
-├── selector.pkl
-└── all_features.pkl
+└── scaler.pkl
 ```
 
 ---
@@ -303,6 +295,7 @@ The system demonstrates how interpretable machine learning can improve customer 
 - Baseline model comparison for academic validity
 - Explainable AI integration using SHAP
 - Cross-validation stability evaluation
+- Clean cross-validation without data leakage
 
 ---
 
@@ -312,6 +305,7 @@ The system demonstrates how interpretable machine learning can improve customer 
 - Fiber optic users had higher churn risk compared to DSL users.
 - Long-term customers were significantly less likely to churn.
 - Electronic check payment method was strongly associated with customer churn.
+- SHAP analysis confirmed that contract type, tenure, monthly charges, and internet service were among the most influential churn drivers.
 
 ---
 
