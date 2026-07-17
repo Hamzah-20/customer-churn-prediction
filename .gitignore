@@ -1,19 +1,35 @@
+# Python
 __pycache__/
 *.py[cod]
 *.so
 .Python
+
+# Virtual Environments
 .env
 .venv/
 venv/
 ENV/
 
-*.xlsx
-
+# IDE
 .vscode/
 .idea/
 *.swp
 
+# Logs
 *.log
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Model Artifacts (إذا أردت رفعها، احذف هذه الأسطر)
+# models/*.pkl
+
+# Prediction Output
 static/predictions_result.csv
 
-.DS_Store
+# Large datasets
+*.xlsx
