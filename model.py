@@ -1,9 +1,11 @@
 import pandas as pd
 import numpy as np
+import random
 import pickle
 import os
 import matplotlib.pyplot as plt
 import seaborn as sns
+from pathlib import Path
 from sklearn.model_selection import train_test_split, cross_val_score, RepeatedStratifiedKFold
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier, VotingClassifier
 from sklearn.linear_model import LogisticRegression
@@ -22,10 +24,27 @@ from xgboost import XGBClassifier
 warnings.filterwarnings('ignore')
 plt.style.use('seaborn-v0_8-darkgrid')
 sns.set_palette("husl")
+SEED = 42
+random.seed(SEED)
+np.random.seed(SEED)
 
 print("=" * 80)
 print("CUSTOMER CHURN PREDICTION - PROFESSIONAL EDITION")
 print("=" * 80)
+
+
+BASE_DIR = Path(__file__).resolve().parent
+
+STATIC_DIR = BASE_DIR / "static"
+MODELS_DIR = BASE_DIR / "models"
+DATA_DIR = BASE_DIR / "data"
+TEMPLATES_DIR = BASE_DIR / "templates"
+
+DATASET_PATH = DATA_DIR / "Telco-Customer-Churn.csv"
+
+STATIC_DIR.mkdir(parents=True, exist_ok=True)
+MODELS_DIR.mkdir(parents=True, exist_ok=True)
+TEMPLATES_DIR.mkdir(parents=True, exist_ok=True)
 
 
 # ============================================================================
@@ -50,7 +69,7 @@ class FeatureSelector:
 # 1. LOADING DATA
 # ============================================================================
 print("\n1. Loading data...")
-df = pd.read_csv('Telco-Customer-Churn.csv')
+df = pd.read_csv(DATASET_PATH)
 
 df['TotalCharges'] = pd.to_numeric(df['TotalCharges'], errors='coerce')
 df.dropna(inplace=True)
@@ -331,27 +350,22 @@ print(
 # ============================================================================
 print("\n10. Saving model artifacts...")
 
-os.makedirs('static', exist_ok=True)
-os.makedirs('templates', exist_ok=True)
-
-# Important:
-# app.py already sends only selected_features,
-# so we save scaler + classifier only.
 final_full_pipeline = Pipeline([
     ('scaler', best_pipeline.named_steps['scaler']),
     ('classifier', best_pipeline.named_steps['classifier'])
 ])
 
-with open('full_pipeline.pkl', 'wb') as f:
-    pickle.dump(final_full_pipeline, f)
+with (MODELS_DIR / "full_pipeline.pkl").open("wb") as file:
+    pickle.dump(final_full_pipeline, file)
+
 print("   ✅ Saved full_pipeline.pkl")
 
-with open('selected_features.pkl', 'wb') as f:
-    pickle.dump(selected_features, f)
+with (MODELS_DIR / "selected_features.pkl").open("wb") as file:
+    pickle.dump(selected_features, file)
 print(f"   ✅ Saved selected_features.pkl ({len(selected_features)} features)")
 
-with open('all_feature_names.pkl', 'wb') as f:
-    pickle.dump(all_feature_names, f)
+with (MODELS_DIR / "all_feature_names.pkl").open("wb") as file:
+    pickle.dump(all_feature_names, file)
 print(f"   ✅ Saved all_feature_names.pkl ({len(all_feature_names)} features)")
 
 encoding_info = {
@@ -361,23 +375,9 @@ encoding_info = {
     'drop_first': True
 }
 
-with open('encoding_info.pkl', 'wb') as f:
-    pickle.dump(encoding_info, f)
+with (MODELS_DIR / "encoding_info.pkl").open("wb") as file:
+    pickle.dump(encoding_info, file)
 print("   ✅ Saved encoding_info.pkl")
-
-with open('churn_model.pkl', 'wb') as f:
-    pickle.dump(best_pipeline.named_steps['classifier'], f)
-
-with open('scaler.pkl', 'wb') as f:
-    pickle.dump(best_pipeline.named_steps['scaler'], f)
-
-with open('full_features.pkl', 'wb') as f:
-    pickle.dump(all_feature_names, f)
-
-with open('selector.pkl', 'wb') as f:
-    pickle.dump(selected_features, f)
-
-print("   ✅ Saved legacy pkl files")
 
 # ============================================================================
 # 12. VISUALIZATIONS
@@ -395,11 +395,11 @@ plt.title(f'Confusion Matrix — {best_name}')
 plt.xlabel('Predicted');
 plt.ylabel('Actual')
 plt.tight_layout()
-plt.savefig('static/confusion_matrix.png', dpi=150, bbox_inches='tight')
+plt.savefig(STATIC_DIR / "confusion_matrix.png", dpi=150, bbox_inches='tight')
 plt.close()
 print("   ✅ confusion_matrix.png")
 
-df_orig = pd.read_csv('Telco-Customer-Churn.csv')
+df_orig = pd.read_csv(DATASET_PATH)
 df_orig['TotalCharges'] = pd.to_numeric(df_orig['TotalCharges'], errors='coerce')
 df_orig.dropna(inplace=True)
 df_orig['Churn'] = df_orig['Churn'].map({'Yes': 1, 'No': 0})
@@ -414,7 +414,7 @@ plt.ylabel('Churn Rate')
 plt.title('Tenure vs Churn Rate')
 plt.legend();
 plt.grid(True, alpha=0.3)
-plt.savefig('static/tenure_effect.png', dpi=150, bbox_inches='tight')
+plt.savefig(STATIC_DIR / "tenure_effect.png", dpi=150, bbox_inches='tight')
 plt.close()
 print("   ✅ tenure_effect.png")
 
@@ -430,7 +430,7 @@ plt.title('Monthly Charges vs Churn Rate')
 plt.xticks(rotation=45);
 plt.legend();
 plt.tight_layout()
-plt.savefig('static/price_effect.png', dpi=150, bbox_inches='tight')
+plt.savefig(STATIC_DIR / "price_effect.png", dpi=150, bbox_inches='tight')
 plt.close()
 print("   ✅ price_effect.png")
 
@@ -445,7 +445,7 @@ if 'Contract' in df_orig.columns:
     for i, v in enumerate(contract_effect):
         plt.text(i, v + 0.01, f'{v * 100:.1f}%', ha='center', fontweight='bold')
     plt.tight_layout()
-    plt.savefig('static/contract_effect.png', dpi=150, bbox_inches='tight')
+    plt.savefig(STATIC_DIR / "contract_effect.png", dpi=150, bbox_inches='tight')
     plt.close()
     print("   ✅ contract_effect.png")
 
@@ -471,7 +471,7 @@ if service_effect:
     plt.xticks(x, list(service_effect.keys()), rotation=45)
     plt.legend();
     plt.tight_layout()
-    plt.savefig('static/services_effect.png', dpi=150, bbox_inches='tight')
+    plt.savefig(STATIC_DIR / "services_effect.png", dpi=150, bbox_inches='tight')
     plt.close()
     print("   ✅ services_effect.png")
 
@@ -516,7 +516,7 @@ try:
         max_display=15
     )
     plt.tight_layout()
-    plt.savefig('static/shap_summary.png', dpi=150, bbox_inches='tight')
+    plt.savefig(STATIC_DIR / "shap_summary.png", dpi=150, bbox_inches='tight')
     plt.close()
 
     plt.figure(figsize=(12, 8))
@@ -528,7 +528,7 @@ try:
         max_display=15
     )
     plt.tight_layout()
-    plt.savefig('static/shap_importance.png', dpi=150, bbox_inches='tight')
+    plt.savefig(STATIC_DIR / "shap_importance.png", dpi=150, bbox_inches='tight')
     plt.close()
 
     print("   ✅ shap_summary.png + shap_importance.png")
@@ -557,11 +557,11 @@ CV Mean F1:      {best_cv_scores.mean() * 100:.2f}% ± {best_cv_scores.std() * 1
 Features:        {len(all_feature_names)} total → {len(selected_features)} selected
 
 Key Files Saved:
-  ✅ full_pipeline.pkl
-  ✅ selected_features.pkl
-  ✅ all_feature_names.pkl
-  ✅ encoding_info.pkl
-  ✅ shap_summary.png
-  ✅ shap_importance.png
+  ✅ models/full_pipeline.pkl
+  ✅ models/selected_features.pkl
+  ✅ models/all_feature_names.pkl
+  ✅ models/encoding_info.pkl
+  ✅ static/shap_summary.png
+  ✅ static/shap_importance.png
 """)
 print("=" * 80)

@@ -4,7 +4,7 @@
 ![Flask](https://img.shields.io/badge/Flask-Web_App-black)
 ![Scikit-Learn](https://img.shields.io/badge/Scikit--Learn-ML-orange)
 ![SHAP](https://img.shields.io/badge/Explainable_AI-SHAP-red)
-
+![XGBoost](https://img.shields.io/badge/XGBoost-Gradient_Boosting-green)
 
 > AI-powered customer churn prediction platform with explainable machine learning and business intelligence analytics.
 
@@ -12,24 +12,26 @@
 
 ## Overview
 
-**Live Project Repository :**  [Churn prediction](https://github.com/Hamzah-20/customer-churn-prediction)
+**Live Project Repository :** [Churn prediction](https://github.com/Hamzah-20/customer-churn-prediction)
 
 The Explainable Customer Churn Prediction System is a full-stack machine learning platform designed to predict telecom customer churn and provide actionable business insights for customer retention strategies.
 
 The project combines:
+
 - Advanced machine learning pipelines
 - Explainable AI techniques
 - Dynamic prediction interfaces
 - Batch customer analysis
 - Business intelligence dashboards
 
-The goal is not only to predict churn, but also to explain *why* customers are likely to leave and recommend retention strategies.
+The goal is not only to predict churn, but also to explain _why_ customers are likely to leave and recommend retention strategies.
 
 ---
 
 ## Key Features
 
 ### AI & Machine Learning
+
 - XGBoost (Final Selected Model)
 - Random Forest
 - Gradient Boosting
@@ -40,6 +42,7 @@ The goal is not only to predict churn, but also to explain *why* customers are l
 - Leakage-Free Repeated Stratified Cross Validation
 
 ### Explainable AI (XAI)
+
 - SHAP Summary Analysis
 - SHAP Feature Importance
 - SHAP Explainability Analysis
@@ -47,6 +50,7 @@ The goal is not only to predict churn, but also to explain *why* customers are l
 - Root Cause Analytics
 
 ### Web Application
+
 - Dynamic form generation
 - Real-time churn prediction
 - Batch CSV prediction
@@ -54,6 +58,7 @@ The goal is not only to predict churn, but also to explain *why* customers are l
 - Responsive UI/UX
 
 ### Business Intelligence
+
 - Customer risk segmentation
 - Retention recommendations
 - Contract impact analysis
@@ -108,6 +113,7 @@ SHAP Explainability
    ↓
 Flask Deployment
 ```
+
 ---
 
 ## Scientific Feature Engineering
@@ -120,6 +126,7 @@ The feature engineering process was inspired by established business and behavio
 - Customer Retention Analytics
 
 Examples of engineered features:
+
 - tenure behavior analysis
 - pricing sensitivity metrics
 - high-risk customer indicators
@@ -149,8 +156,8 @@ This workflow prevents information leakage and provides a more trustworthy estim
 
 In churn prediction, missing a customer who is likely to leave is often more expensive than contacting a customer who would stay.
 
-* False Negative → Lost customer and lost revenue
-* False Positive → Retention offer with relatively low cost
+- False Negative → Lost customer and lost revenue
+- False Positive → Retention offer with relatively low cost
 
 Therefore, Recall was prioritized as a key evaluation metric.
 
@@ -158,25 +165,25 @@ Therefore, Recall was prioritized as a key evaluation metric.
 
 | Model               | Accuracy   | Precision  | Recall     | F1-Score   | ROC-AUC    |
 | ------------------- | ---------- | ---------- | ---------- | ---------- | ---------- |
-| Logistic Regression | 78.04%     | 57.87%     | 63.90%     | 60.74%     | 83.53%     |
-| Random Forest       | 77.40%     | 56.33%     | 66.58%     | 61.03%     | 83.65%     |
-| Gradient Boosting   | 77.90%     | 58.49%     | 58.02%     | 58.26%     | 82.78%     |
-| **XGBoost**         | **73.77%** | **50.43%** | **78.61%** | **61.44%** | **83.14%** |
+| Logistic Regression | 78.32%     | 58.19%     | 65.51%     | 61.64%     | 83.59%     |
+| Random Forest       | 77.11%     | 55.73%     | 67.65%     | 61.11%     | 83.74%     |
+| Gradient Boosting   | 77.61%     | 57.70%     | 59.09%     | 58.39%     | 82.59%     |
+| **XGBoost**         | **74.20%** | **50.95%** | **79.14%** | **61.99%** | **83.21%** |
 
 ### Leakage-Free Cross-Validation Results
 
 | Model               | Mean F1 | Std Dev |
 | ------------------- | ------- | ------- |
-| Logistic Regression | 62.29%  | ±1.45%  |
-| Random Forest       | 63.58%  | ±1.54%  |
-| Gradient Boosting   | 60.13%  | ±1.85%  |
-| XGBoost             | 62.57%  | ±1.17%  |
+| Logistic Regression | 63.03%  | ±1.22%  |
+| Random Forest       | 63.40%  | ±1.37%  |
+| Gradient Boosting   | 60.10%  | ±1.67%  |
+| XGBoost             | 62.79%  | ±1.17%  |
 
 The reported cross-validation results were obtained using a leakage-free repeated stratified cross-validation workflow, where resampling and feature selection were performed independently within each fold.
 
 ### Selected Model
 
-**XGBoost** was selected as the final model because it achieved the highest churn detection capability (Recall = 78.61%) while maintaining strong ROC-AUC performance.
+**XGBoost** was selected as the final production model because it achieved the highest F1-score on the held-out test set while also providing the strongest churn detection capability (Recall = 79.14%).
 
 The final model demonstrated stable performance between the test set and cross-validation results, indicating reliable generalization and effective prevention of data leakage.
 
@@ -185,6 +192,7 @@ The final model demonstrated stable performance between the test set and cross-v
 ## Explainable AI Visualizations
 
 The platform generates:
+
 - SHAP Summary Plots
 - SHAP Importance Charts
 - Model Explainability Visualizations
@@ -198,13 +206,16 @@ These visualizations help explain model decisions and improve business trust in 
 ## Technologies Used
 
 ### Backend
+
 - Python
 - Flask
 - Scikit-learn
 - Pandas
 - NumPy
+- XGBoost (imbalanced-learn (SMOTETomek))
 
 ### Machine Learning
+
 - Random Forest
 - Gradient Boosting
 - XGBoost
@@ -213,11 +224,13 @@ These visualizations help explain model decisions and improve business trust in 
 - SMOTETomek
 
 ### Frontend
+
 - HTML5
 - CSS3
 - JavaScript
 
 ### Visualization
+
 - Matplotlib
 - Seaborn
 
@@ -233,21 +246,23 @@ customer-churn-prediction/
 ├── requirements.txt
 ├── README.md
 │
+├── data/
+│   └── Telco-Customer-Churn.csv
+│
+├── models/
+│   ├── full_pipeline.pkl
+│   ├── selected_features.pkl
+│   ├── all_feature_names.pkl
+│   └── encoding_info.pkl
+│
 ├── static/
 │   ├── shap_summary.png
 │   ├── shap_importance.png
 │   ├── confusion_matrix.png
 │   └── ...
 │
-├── templates/
-│   └── index.html
-│
-├── full_pipeline.pkl
-├── selected_features.pkl
-├── all_feature_names.pkl
-├── encoding_info.pkl
-├── churn_model.pkl
-└── scaler.pkl
+└── templates/
+    └── index.html
 ```
 
 ---
@@ -256,7 +271,7 @@ customer-churn-prediction/
 
 Telco Customer Churn Dataset from Kaggle:
 
-https://www.kaggle.com/datasets/blastchar/telco-customer-churn
+- **Source:** [Telco Customer Churn Dataset (Kaggle)](https://www.kaggle.com/datasets/blastchar/telco-customer-churn)
 
 ---
 
@@ -307,15 +322,19 @@ http://127.0.0.1:5000
 ## Application Preview
 
 ### Dashboard
+
 <img width="1919" height="952" alt="image" src="https://github.com/user-attachments/assets/c34dc0dc-162e-4848-9fdb-0eedb6b095fd" />
 
 ### SHAP Explainability
+
 <img width="1350" height="2240" alt="127 0 0 1_5000_" src="https://github.com/user-attachments/assets/b8bd082e-2318-4eb6-bfd2-e44c3ccb4272" />
 
 ### Confusion Matrix
+
 <img width="1096" height="880" alt="confusion_matrix" src="https://github.com/user-attachments/assets/c26aa9e5-7144-445a-8888-f5613f2ca8b9" />
 
 ### Batch Prediction
+
 <img width="1350" height="2399" alt="127 0 0 1_5000_ (1)" src="https://github.com/user-attachments/assets/9186ed9d-79c0-4e55-99fc-a3d259d430d8" />
 
 ---
@@ -323,6 +342,7 @@ http://127.0.0.1:5000
 ## Research & Academic Contribution
 
 This project was developed with a strong focus on:
+
 - Preventing data leakage
 - Explainable AI
 - Business-oriented machine learning
@@ -357,17 +377,16 @@ The system demonstrates how interpretable machine learning can improve customer 
 
 ## Future Improvements
 
-* Automated Hyperparameter Optimization using Optuna or Bayesian Optimization
-* MLflow Integration for Experiment Tracking and Model Versioning
-* End-to-End MLOps Pipeline for Continuous Training and Deployment
-* Customer Lifetime Value (CLV) Prediction Integration
-* Real-Time Prediction API using FastAPI
-* Cloud Deployment on AWS, Azure, or Google Cloud Platform
-* Advanced Ensemble Learning Strategies
-* Deep Learning-Based Churn Prediction Models
-* Automated Data Drift Detection and Monitoring
-* Interactive Business Intelligence Dashboard with Real-Time Analytics
-
+- Automated Hyperparameter Optimization using Optuna or Bayesian Optimization
+- MLflow Integration for Experiment Tracking and Model Versioning
+- End-to-End MLOps Pipeline for Continuous Training and Deployment
+- Customer Lifetime Value (CLV) Prediction Integration
+- Real-Time Prediction API using FastAPI
+- Cloud Deployment on AWS, Azure, or Google Cloud Platform
+- Advanced Ensemble Learning Strategies
+- Deep Learning-Based Churn Prediction Models
+- Automated Data Drift Detection and Monitoring
+- Interactive Business Intelligence Dashboard with Real-Time Analytics
 
 ---
 

@@ -1,22 +1,48 @@
 import os
 import pickle
-import pandas as pd
-import numpy as np
-from flask import Flask, render_template, request, jsonify, send_file
 import warnings
+from pathlib import Path
+
+import matplotlib
+import numpy as np
+import pandas as pd
+from flask import Flask, jsonify, render_template, request, send_file
+
+
 import matplotlib
 
 matplotlib.use('Agg')
+
 import matplotlib.pyplot as plt
+
 
 warnings.filterwarnings('ignore')
 plt.rcParams['font.family'] = 'DejaVu Sans'
 
 app = Flask(__name__)
 
-print("=" * 60)
-print("Loading model components...")
-print("=" * 60)
+
+# ============================================================================
+# PROJECT PATHS
+# ============================================================================
+
+BASE_DIR = Path(__file__).resolve().parent
+
+MODELS_DIR = BASE_DIR / "models"
+DATA_DIR = BASE_DIR / "data"
+STATIC_DIR = BASE_DIR / "static"
+TEMPLATES_DIR = BASE_DIR / "templates"
+
+PIPELINE_PATH = MODELS_DIR / "full_pipeline.pkl"
+SELECTED_FEATURES_PATH = MODELS_DIR / "selected_features.pkl"
+ALL_FEATURE_NAMES_PATH = MODELS_DIR / "all_feature_names.pkl"
+ENCODING_INFO_PATH = MODELS_DIR / "encoding_info.pkl"
+
+DATASET_PATH = DATA_DIR / "Telco-Customer-Churn.csv"
+BATCH_RESULTS_PATH = STATIC_DIR / "predictions_result.csv"
+BATCH_CHART_PATH = STATIC_DIR / "batch_chart.png"
+
+RISK_THRESHOLD = 0.65
 
 
 # ============================================================================
@@ -41,61 +67,81 @@ class FeatureSelector:
 # LOAD MODEL ARTIFACTS
 # ============================================================================
 
-try:
-    with open('full_pipeline.pkl', 'rb') as f:
-        full_pipeline = pickle.load(f)
-    print(f"✅ Loaded full_pipeline.pkl")
-except FileNotFoundError:
-    print("⚠️ full_pipeline.pkl not found — will use legacy files")
-    full_pipeline = None
+# ============================================================================
+# LOAD MODEL ARTIFACTS
+# ============================================================================
 
-try:
-    with open('churn_model.pkl', 'rb') as f:
-        model = pickle.load(f)
-    print("✅ Loaded churn_model.pkl")
-except Exception as e:
-    print(f"❌ {e}");
-    model = None
+def load_pickle_file(file_path: Path, description: str):
+    """Load a required pickle artifact with a clear error message."""
 
-try:
-    with open('scaler.pkl', 'rb') as f:
-        scaler = pickle.load(f)
-    print("✅ Loaded scaler.pkl")
-except Exception as e:
-    print(f"❌ {e}");
-    scaler = None
+    if not file_path.exists():
+        raise FileNotFoundError(
+            f"{description} was not found at: {file_path}"
+        )
 
-try:
-    with open('selected_features.pkl', 'rb') as f:
-        selected_features = pickle.load(f)
-    print(f"✅ Loaded selected_features.pkl: {len(selected_features)} features")
-except Exception as e:
-    print(f"❌ {e}");
-    selected_features = []
-
-try:
-    with open('all_feature_names.pkl', 'rb') as f:
-        all_feature_names = pickle.load(f)
-    print(f"✅ Loaded all_feature_names.pkl: {len(all_feature_names)} features")
-except FileNotFoundError:
     try:
-        with open('full_features.pkl', 'rb') as f:
-            all_feature_names = pickle.load(f)
-        print(f"✅ Loaded full_features.pkl: {len(all_feature_names)} features")
-    except Exception as e:
-        print(f"❌ {e}");
-        all_feature_names = []
+        with file_path.open("rb") as file:
+            artifact = pickle.load(file)
+    except (OSError, pickle.UnpicklingError, EOFError) as error:
+        raise RuntimeError(
+            f"Failed to load {description} from {file_path}: {error}"
+        ) from error
 
-try:
-    with open('encoding_info.pkl', 'rb') as f:
-        encoding_info = pickle.load(f)
-    print("✅ Loaded encoding_info.pkl")
-except FileNotFoundError:
-    encoding_info = None
-    print("⚠️ encoding_info.pkl not found")
+    print(f"✅ Loaded {description}")
+    return artifact
+
 
 print("=" * 60)
-print(f"Pipeline ready | Selected features: {len(selected_features)}")
+print("Loading model components...")
+print("=" * 60)
+
+try:
+    full_pipeline = load_pickle_file(
+        PIPELINE_PATH,
+        "full_pipeline.pkl",
+    )
+
+    selected_features = load_pickle_file(
+        SELECTED_FEATURES_PATH,
+        "selected_features.pkl",
+    )
+
+    all_feature_names = load_pickle_file(
+        ALL_FEATURE_NAMES_PATH,
+        "all_feature_names.pkl",
+    )
+
+    encoding_info = load_pickle_file(
+        ENCODING_INFO_PATH,
+        "encoding_info.pkl",
+    )
+
+except (FileNotFoundError, RuntimeError) as error:
+    print(f"❌ Model initialization failed: {error}")
+    raise SystemExit(1) from error
+
+
+if not selected_features:
+    raise SystemExit(
+        "❌ selected_features.pkl does not contain any features."
+    )
+
+if not all_feature_names:
+    raise SystemExit(
+        "❌ all_feature_names.pkl does not contain any features."
+    )
+
+
+print(
+    f"✅ Selected features: {len(selected_features)}"
+)
+
+print(
+    f"✅ All training features: {len(all_feature_names)}"
+)
+
+print("=" * 60)
+print("Production pipeline is ready.")
 print("=" * 60)
 
 
@@ -149,28 +195,39 @@ def align_to_training(df_encoded):
     return df_encoded[all_feature_names]
 
 
-def predict_with_pipeline(X_df):
 
-    if full_pipeline is not None:
-        prob = full_pipeline.predict_proba(X_df)[0][1]
-        pred = full_pipeline.predict(X_df)[0]
-    else:
-        X_scaled = scaler.transform(X_df.values)
-        prob = model.predict_proba(X_scaled)[0][1]
-        pred = model.predict(X_scaled)[0]
-    return float(prob), int(pred)
+def predict_with_pipeline(
+    input_data: pd.DataFrame,
+) -> tuple[float, int]:
+    """Predict churn for one customer."""
+
+    probability = float(
+        full_pipeline.predict_proba(input_data)[0][1]
+    )
+
+    prediction = int(
+        probability >= RISK_THRESHOLD
+    )
+
+    return probability, prediction
 
 
-def predict_batch_with_pipeline(X_df):
+def predict_batch_with_pipeline(
+    input_data: pd.DataFrame,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Predict churn for multiple customers."""
 
-    if full_pipeline is not None:
-        probs = full_pipeline.predict_proba(X_df)[:, 1]
-        preds = full_pipeline.predict(X_df)
-    else:
-        X_scaled = scaler.transform(X_df.values)
-        probs = model.predict_proba(X_scaled)[:, 1]
-        preds = model.predict(X_scaled)
-    return probs, preds
+    probabilities = full_pipeline.predict_proba(
+        input_data
+    )[:, 1]
+
+    predictions = (
+        probabilities >= RISK_THRESHOLD
+    ).astype(int)
+
+    return probabilities, predictions
+
+
 
 
 def get_risk_info(probability):
@@ -218,7 +275,7 @@ def get_dynamic_form_fields():
     }
 
     try:
-        df_orig = pd.read_csv('Telco-Customer-Churn.csv')
+        df_orig = pd.read_csv(DATASET_PATH)
         for col in original_columns:
             if col in df_orig.columns:
                 vals = df_orig[col].dropna().unique().tolist()
@@ -313,10 +370,8 @@ def predict_single():
         df_final = df_aligned[selected_features]
         print(f"   After selection: {df_final.shape[1]} features")
 
-        probability, _ = predict_with_pipeline(df_final)
 
-        RISK_THRESHOLD = 0.65
-        prediction = int(probability >= RISK_THRESHOLD)
+        probability, prediction = predict_with_pipeline(df_final)
         print(f"   ✅ Probability: {probability * 100:.1f}% | Prediction: {'Churn' if prediction else 'Stay'}")
 
         risk, recommendation = get_risk_info(probability)
@@ -408,14 +463,8 @@ def predict_batch():
                 'error': f'Feature mismatch: expected {expected_features}, got {actual_features}. Please re-run model.py'
             })
 
-        probabilities, _ = predict_batch_with_pipeline(df_final)
+        probabilities, predictions = predict_batch_with_pipeline(df_final)
 
-        # Important:
-        # 0.50 gives high recall but too many false positives.
-        # 0.65 is better for displaying "At Risk" customers in the dashboard.
-        RISK_THRESHOLD = 0.65
-
-        predictions = (probabilities >= RISK_THRESHOLD).astype(int)
 
         print(f"   ✅ Predictions complete: {len(predictions)} customers")
         print(f"   Threshold used: {RISK_THRESHOLD * 100:.0f}%")
@@ -427,16 +476,17 @@ def predict_batch():
             'Customer_ID': customer_ids[:len(predictions)],
             'Prediction': ['Will Churn' if p == 1 else 'Will Stay' for p in predictions],
             'Churn_Probability': [round(p * 100, 1) for p in probabilities],
-            'Risk_Level': [
-                'High' if p >= 0.65
-                else 'Medium' if p >= 0.40
-                else 'Low'
-                for p in probabilities
+            "Risk_Level": [
+                "High"
+                if probability >= RISK_THRESHOLD
+                else "Medium"
+                if probability >= 0.40
+                else "Low"
+                for probability in probabilities
             ]
         })
 
-        output_path = 'static/predictions_result.csv'
-        results_df.to_csv(output_path, index=False, encoding='utf-8-sig')
+        results_df.to_csv(BATCH_RESULTS_PATH,index=False, encoding="utf-8-sig",)
 
         plt.figure(figsize=(14, 6))
 
@@ -468,7 +518,7 @@ def predict_batch():
         plt.grid(True, alpha=0.3)
         plt.tight_layout()
 
-        plt.savefig('static/batch_chart.png', dpi=150)
+        plt.savefig(BATCH_CHART_PATH,dpi=150, bbox_inches="tight",)
         plt.close()
 
         churn_count = int((results_df['Prediction'] == 'Will Churn').sum())
@@ -480,9 +530,12 @@ def predict_batch():
             'churn_percentage': round(churn_count / len(results_df) * 100, 1),
             'stay_count': len(results_df) - churn_count,
             'download_url': '/static/predictions_result.csv',
-            'chart_url': '/static/batch_chart.png?v=' + str(
-                os.path.getmtime('static/batch_chart.png')
-            ) if os.path.exists('static/batch_chart.png') else None,
+            "chart_url": (
+                "/static/batch_chart.png?v="
+                + str(BATCH_CHART_PATH.stat().st_mtime)
+                if BATCH_CHART_PATH.exists()
+                else None
+            ),
             'results': results_df.head(30).to_dict('records')
         })
 
@@ -492,10 +545,21 @@ def predict_batch():
         return jsonify({'success': False, 'error': str(e)})
 
 
-@app.route('/download_results')
+@app.route("/download_results")
 def download_results():
-    return send_file('static/predictions_result.csv',
-                     as_attachment=True, download_name='churn_predictions.csv')
+    if not BATCH_RESULTS_PATH.exists():
+        return jsonify(
+            {
+                "success": False,
+                "error": "No batch prediction results are available.",
+            }
+        ), 404
+
+    return send_file(
+        BATCH_RESULTS_PATH,
+        as_attachment=True,
+        download_name="churn_predictions.csv",
+    )
 
 
 @app.route('/insights')
@@ -509,18 +573,35 @@ def get_insights():
     return jsonify(images)
 
 
-if __name__ == '__main__':
-    os.makedirs('static', exist_ok=True)
-    os.makedirs('templates', exist_ok=True)
+if __name__ == "__main__":
+    STATIC_DIR.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    TEMPLATES_DIR.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
 
     print("\n" + "=" * 60)
     print("🚀 Starting Churn Prediction Application")
     print("=" * 60)
-    print(f"   Pipeline:         {'✅ full_pipeline.pkl' if full_pipeline else '⚠️ legacy files'}")
+    print("   Pipeline: Production ML Pipeline")
+    print(f"   Risk threshold: {RISK_THRESHOLD:.2f}")
     print(f"   Selected features: {len(selected_features)}")
-    print(f"   All features:      {len(all_feature_names)}")
-    print(f"   URL: Render deployment")
+    print(f"   All features: {len(all_feature_names)}")
+    print("   Local URL: http://127.0.0.1:5000")
     print("=" * 60 + "\n")
 
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
+    port = int(
+        os.environ.get(
+            "PORT",
+            5000,
+        )
+    )
+
+    app.run(
+        host="0.0.0.0",
+        port=port,
+    )
